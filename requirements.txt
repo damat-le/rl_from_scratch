@@ -1,0 +1,5 @@
+git+https://github.com/damat-le/gym.git#egg=gym
+pygame
+numpy
+seaborn
+matplotlib
