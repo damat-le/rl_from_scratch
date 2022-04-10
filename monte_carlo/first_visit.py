@@ -1,5 +1,6 @@
 import gym
 import numpy as np 
+from tqdm import tqdm
 
 class FirstVisitMC():
     """
@@ -14,18 +15,7 @@ class FirstVisitMC():
         self.na = self.env.action_space.n
         self.policy = self.initialise_policy()
         self.Q = self.initialise_value_function()
-        #self.returns = {}
-
-    # def initialise_policy(self):
-    #     """
-    #     Initialise the policy to a random policy.
-    #     """
-    #     policy={}
-
-    #     for state in range(self.ns):
-    #         for action in range(self.na):
-    #             policy[state] = random.randint(0, self.na-1)
-    #     return policy
+        self.returns = self.initialise_returns()
 
     def initialise_policy(self):
         """
@@ -52,22 +42,16 @@ class FirstVisitMC():
         idx = np.random.multinomial(1, dist, size=None)
         return np.where(idx == 1)[0][0]
 
-    # def initialise_value_function(self):
-    #     """
-    #     Initialise the policy to a random policy.
-    #     """
-    #     Q={}
-
-    #     for state in range(self.ns):
-    #         for action in range(self.na):
-    #             Q[(state, action)] = 0
-    #     return Q
-
     def initialise_value_function(self):
         """
         Initialise the value function to zero.
         """
-        Q = np.zeros((self.na, self.ns))
+        #Q = np.zeros((self.na, self.ns))
+        Q = np.random.uniform(
+            low=0,
+            high=1,
+            size=(self.na, self.ns)
+            )
         return Q
 
     def initialise_returns(self):
@@ -98,7 +82,7 @@ class FirstVisitMC():
 
             action = self.sample_action(state)
             next_state, reward, done, _ = self.env.step(action)
-            episode.append((state, action, reward, next_state))
+            episode.append((state, action, reward))
             
             if verbose:
                 print(f"Step: {step}")
@@ -115,36 +99,31 @@ class FirstVisitMC():
         self.env.close()
         return episode
 
-    
-    def train(self, n_episodes: int = 1000):
+
+    def train(self, n_episodes: int = 1000, verbose=False):
         """
         Train the policy using the first-visit Monte Carlo method.
         """
-        for episode in range(n_episodes):
-            episode = self.generate_episode(verbose=False)
-            #episode_len = len(episode)
+        for episode in tqdm(range(n_episodes)):
+            episode = self.generate_episode(verbose=verbose)
             G = 0
-            returns = self.initialise_returns()
-            
-            while episode:
-                state, action, reward, next_state = episode.pop()
-                G = self.gamma * G + reward
-                
-                #state = next_state
-                if (state, action) not in {(s,a) for s,a,_,_ in episode}:
-                    returns[(action, state)].append(G)
-                    self.Q[action, state] = np.mean(returns[(action, state)])
 
+            while episode:
+                state, action, reward = episode.pop()
+                G = self.gamma * G + reward
+
+                if (state, action) not in {(s,a) for s,a,_ in episode}:
+                    self.returns[(action, state)].append(G)
+                    self.Q[action, state] = np.mean(self.returns[(action, state)])
                     a_greedy = np.argmax(self.Q[:,state])
                     self.policy[:,state] = self.eps / (self.na - 1)
                     self.policy[a_greedy, state] = 1 - self.eps
 
 
 if __name__=='__main__':
-    import seaborn as sns
-    import matplotlib.pyplot as plt
     import pickle
     import os
+    from utils import plot_valuefunc_and_policy
 
     # create output directory if it doesn't exist
     if not os.path.exists('output'):
@@ -152,13 +131,12 @@ if __name__=='__main__':
 
     # Train the agent
     env = gym.make('FrozenLake8x8-v1', is_slippery=False)
-    mc = FirstVisitMC(env, gamma=.999, eps=.3)
-    mc.train(n_episodes=1000000)
-    v = mc.Q.max(axis=0).reshape(8,8)
-    sns.heatmap(v, cmap='YlGnBu', annot=True, fmt='.2f')
-    
-    # Save the trained agent
-    plt.savefig('output/v.png')
+    mc = FirstVisitMC(env, gamma=.99, eps=.3)
+    mc.train(n_episodes=10000)
+
+    # Plot the value function and policy
+    plot_valuefunc_and_policy(mc.Q)
+    # Save the agent as pickle
     pickle.dump(mc, open('output/mc.pkl', 'wb'))
 
     # Run an episode after training
