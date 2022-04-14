@@ -1,5 +1,4 @@
-git+https://github.com/damat-le/gym.git#egg=gym
-pygame
+gym_simplegrid
 numpy
 seaborn
 matplotlib

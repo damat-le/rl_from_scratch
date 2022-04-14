@@ -65,9 +65,16 @@ class FirstVisitMC():
                 returns[(action, state)] = []
         return returns
     
-    def generate_episode(self, render=False, verbose=False):
+    def generate_episode(self, render: bool = False, verbose: bool = False):
         """
-        Generate an episode using the current policy.
+        Generate an episode using the current learned policy.
+
+        Parameters
+        ----------
+        render : bool
+            Whether to render the environment.
+        verbose : bool
+            Whether to print the episode's information.
         """
         if verbose:
             print("--------NEW EPISODE--------")
@@ -103,6 +110,13 @@ class FirstVisitMC():
     def train(self, n_episodes: int = 1000, verbose=False):
         """
         Train the policy using the first-visit Monte Carlo method.
+
+        Parameters
+        ----------
+        n_episodes : int
+            The number of episodes to train for.
+        verbose : bool
+            Whether to print each episode's information.
         """
         for episode in tqdm(range(n_episodes)):
             episode = self.generate_episode(verbose=verbose)
@@ -124,14 +138,25 @@ if __name__=='__main__':
     import pickle
     import os
     from utils import plot_valuefunc_and_policy
+    import gym_simplegrid
 
     # create output directory if it doesn't exist
     if not os.path.exists('output'):
         os.makedirs('output')
 
     # Train the agent
-    env = gym.make('FrozenLake8x8-v1', is_slippery=False)
-    mc = FirstVisitMC(env, gamma=.99, eps=.3)
+    desc = np.array([
+    "SSSSSSSS",
+    "SSSSSSSS",
+    "SSSWSSSS",
+    "SSSSSWSS",
+    "SSSWSSSS",
+    "SWWSSSWS",
+    "SWSSWSWS",
+    "SSSWSSSG",
+    ], dtype='c')
+    env = gym.make('SimpleGrid-8x8-v0', desc=desc)
+    mc = FirstVisitMC(env, gamma=.99, eps=.1)
     mc.train(n_episodes=10000)
 
     # Plot the value function and policy
