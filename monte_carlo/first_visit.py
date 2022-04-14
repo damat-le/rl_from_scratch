@@ -155,7 +155,15 @@ if __name__=='__main__':
     "SWSSWSWS",
     "SSSWSSSG",
     ], dtype='c')
-    env = gym.make('SimpleGrid-8x8-v0', desc=desc)
+
+    my_reward_map = {
+        b'S': 0.,
+        b'W': -1.,
+        b'G': 5.,
+        b'E': 0.,
+    }
+
+    env = gym.make('SimpleGrid-8x8-v0', desc=desc, reward_map=my_reward_map)
     mc = FirstVisitMC(env, gamma=.99, eps=.1)
     mc.train(n_episodes=10000)
 
